@@ -27,7 +27,7 @@ var (
 func init() {
 	GoXormTmp = `
 {{- range .Tables -}}
-// SELECT: {{SelectRawSql .}}
+// {{SelectRawSql .}}
 type {{TableMapper .Name}} struct {
 {{$table := .}}
 {{range .ColumnsSeq}}{{$col := $table.GetColumn .}}	{{ColMapper $col.Name}}	{{Type $col}} {{Tag $table $col}}
@@ -302,7 +302,7 @@ func getTag(mapper names.Mapper, genJson bool, genXorm bool, otherTags []string)
 		jsonName := mapper.Table2Obj(col.Name)
 		jsonName = snakeMapper.Obj2Table(jsonName)
 		if genJson {
-			tags = append(tags, "json:\""+jsonName+"\"")
+			tags = append(tags, "json:\""+jsonName+"\" db:\""+jsonName+"\"")
 		}
 		if len(res) > 0 && genXorm {
 			tags = append(tags, "xorm:\""+strings.Join(res, " ")+"\"")
@@ -316,7 +316,7 @@ func getTag(mapper names.Mapper, genJson bool, genXorm bool, otherTags []string)
 			}
 		}
 		if len(tags) > 0 {
-			return "`" + strings.Join(tags, " ") + "`"
+			return "`" + strings.Join(tags, " ") + "` // " + col.Comment
 		} else {
 			return ""
 		}
@@ -508,7 +508,7 @@ func GetSelectRawSql(table *schemas.Table) string {
 	colNames := make([]string, 0, len(table.Columns()))
 	for _, v := range table.ColumnsSeq() {
 		col := table.GetColumn(v)
-		colNames = append(colNames, "`"+col.Name+"`")
+		colNames = append(colNames, col.Name)
 	}
-	return fmt.Sprintf("SELECT %s FROM `%s`", strings.Join(colNames, ", "), table.Name)
+	return fmt.Sprintf("SELECT %s FROM %s", strings.Join(colNames, ", "), table.Name)
 }
